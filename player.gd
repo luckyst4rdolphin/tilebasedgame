@@ -4,7 +4,7 @@ var tile_size = 16
 var input_dir = Vector2.ZERO
 var moving = false
 var stop_input: bool = false
-var initial_position = Vector2(0, 0)
+var speed = 200.0
 
 @onready var animation_tree : AnimationTree = $AnimationTree
 
@@ -38,7 +38,8 @@ func process_player_movement_input():
 	if input_dir != Vector2.ZERO:
 		animation_tree['parameters/Idle/blend_position'] = input_dir
 		animation_tree['parameters/Walk/blend_position'] = input_dir
-		initial_position = position
+		velocity = input_dir * speed
+		move_and_slide()
 		moving = true
 	else:
 		animation_tree['parameters/conditions/idle'] = true
@@ -46,8 +47,9 @@ func process_player_movement_input():
 		
 
 func move(delta):
+	velocity = input_dir * speed
 	moving = false
-	position = initial_position + (input_dir * tile_size)
+	move_and_slide()
 			
 func move_false():
 	moving = false
