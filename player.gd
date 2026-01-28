@@ -48,9 +48,7 @@ func _physics_process(_delta):
 		input_dir = Vector2.UP
 
 	if input_dir != Vector2.ZERO:
-		facing = input_dir
-		animation_tree["parameters/Idle/blend_position"] = input_dir
-		animation_tree["parameters/Walk/blend_position"] = input_dir
+		set_facing(input_dir)
 		_try_step(input_dir)
 	else:
 		animation_tree["parameters/conditions/idle"] = true
