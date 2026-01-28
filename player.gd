@@ -11,6 +11,7 @@ var sliding := false
 @onready var animation_tree : AnimationTree = $AnimationTree
 @onready var ray: RayCast2D = $RayCast2D
 @onready var slide: TileMapLayer = $"../slide"
+@onready var conveyor_layer: TileMapLayer = $"../upward_conveyor"
 
 func snap_feet_to_tile():
 	var cell := slide.local_to_map(slide.to_local(global_position))
@@ -55,6 +56,30 @@ func _physics_process(_delta):
 		animation_tree["parameters/conditions/idle"] = true
 		animation_tree["parameters/conditions/is_moving"] = false
 		
+
+func set_facing(dir: Vector2) -> void:
+	if dir == Vector2.ZERO:
+		return
+	facing = dir
+	animation_tree["parameters/Idle/blend_position"] = dir
+	animation_tree["parameters/Walk/blend_position"] = dir
+
+func get_conveyor_dir() -> Vector2:
+	# checks what direction the conveyor is facing
+	var sample_pos := global_position + Vector2(0, -1)
+	var cell := conveyor_layer.local_to_map(conveyor_layer.to_local(sample_pos))
+	var td := conveyor_layer.get_cell_tile_data(cell)
+	if td == null: return Vector2.ZERO
+	if not bool(td.get_custom_data("is_conveyor")): return Vector2.ZERO
+
+	var d := int(td.get_custom_data("conveyor_direction"))
+	match d:
+		0: return Vector2.UP
+		1: return Vector2.RIGHT
+		2: return Vector2.DOWN
+		3: return Vector2.LEFT
+	return Vector2.ZERO
+
 func _try_step(dir: Vector2) -> void:
 	# collision check: point ray toward the next tile and update immediately.
 	ray.target_position = dir * tile_size
@@ -64,8 +89,19 @@ func _try_step(dir: Vector2) -> void:
 		return
 	
 	await _step_one_tile(dir)
+	
+	# check if tile is a conveyor tile
+	var cdir := get_conveyor_dir()
+	if cdir != Vector2.ZERO:
+		sliding = true
+		set_facing(cdir)
+		await _try_step(cdir) 
+		return
 
+	# check if tile is slippery
 	sliding = is_on_slippery()
+	if sliding:
+		await _try_step(facing)
 
 func _step_one_tile(dir: Vector2) -> void:
 	moving = true
